@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل ألعاب تعليمية ذكية - الرحلة التفاعلية</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Celebration Effects -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glow-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
+        }
+
+        .glow-button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.8);
+        }
+
+        .pulse-slow {
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(1deg); }
+        }
+
+        .floating-element {
+            animation: float 5s ease-in-out infinite;
+        }
+
+        .shake-error {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between relative overflow-x-hidden">
+
+    <!-- Background Decorative Elements -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-10 right-10 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl floating-element"></div>
+        <div class="absolute bottom-10 left-10 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl floating-element" style="animation-delay: -2s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-3xl floating-element" style="animation-delay: -3.5s;"></div>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="relative z-10 w-full px-6 py-4 glass-card border-b border-white/10">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-2xl shadow-lg">
+                    🚀
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-200">
+                        ألعاب تعليمية ذكية
+                    </h1>
+                    <p class="text-xs text-purple-300/80 font-semibold">مدرسة سعيد بن المسيب للتعليم الأساسي</p>
+                </div>
+            </div>
+
+            <!-- Score & Stats HUD -->
+            <div id="hud" class="hidden flex items-center space-x-4 space-x-reverse bg-slate-900/60 px-4 py-2 rounded-2xl border border-white/10">
+                <div class="flex items-center space-x-2 space-x-reverse text-amber-400">
+                    <i class="fa-solid fa-star text-lg"></i>
+                    <span id="score-display" class="font-bold text-lg">0</span>
+                    <span class="text-xs text-slate-400">نقطة</span>
+                </div>
+                <div class="h-6 w-px bg-white/20"></div>
+                <div class="flex items-center space-x-2 space-x-reverse text-cyan-400">
+                    <i class="fa-solid fa-fire text-lg"></i>
+                    <span id="streak-display" class="font-bold text-lg">0</span>
+                    <span class="text-xs text-slate-400">تتابع</span>
+                </div>
+                <div class="h-6 w-px bg-white/20"></div>
+                <div class="flex items-center space-x-2 space-x-reverse text-emerald-400">
+                    <i class="fa-solid fa-award text-lg"></i>
+                    <span id="badge-count" class="font-bold text-lg">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="relative z-10 flex-grow max-w-4xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+        <!-- 1. Intro & Story Screen -->
+        <div id="screen-intro" class="glass-card rounded-3xl p-6 md:p-10 text-center relative overflow-hidden transition-all duration-500">
+            <!-- Branding Banner -->
+            <div class="mb-6 p-4 rounded-2xl bg-gradient-to-r from-indigo-900/60 via-purple-900/60 to-slate-900/60 border border-purple-500/30 text-center">
+                <h3 class="text-lg md:text-xl font-black text-amber-300 tracking-wide mb-1">
+                    🏫 مدرسة سعيد بن المسيب للتعليم الأساسي
+                </h3>
+                <p class="text-sm md:text-base font-bold text-cyan-200">
+                    🎤 إعداد وتقديم: الأستاذ خميس الوشاحي
+                </p>
+            </div>
+
+            <div class="inline-block p-4 rounded-full bg-purple-500/10 border border-purple-500/30 mb-4 floating-element">
+                <i class="fa-solid fa-user-astronaut text-5xl text-purple-400"></i>
+            </div>
+            
+            <h2 class="text-3xl md:text-4xl font-black mb-4 text-white">
+                مرحباً بك أيهَا المعلم الخبير / المعلم القائد!
+            </h2>
+            
+            <div class="bg-slate-900/50 p-5 rounded-2xl border border-purple-500/20 mb-6 text-right space-y-3 leading-relaxed text-slate-200">
+                <p class="flex items-start gap-2">
+                    <span class="text-2xl">🌌</span>
+                    <span><strong>القصة والمهمة:</strong> في مجرة التعليم الحديث، تعرض "كوكب المعرفة" لهجوم من غبار الملل والشرح التكراري، مما أدى إلى انخفاض الشغف والدافعية لدى الطلاب!</span>
+                </p>
+                <p class="flex items-start gap-2">
+                    <span class="text-2xl">🎮</span>
+                    <span>بصفتك **معلماً خبيراً** في مدرسة سعيد بن المسيب، تم اختيارك لقيادة **"مركبة الابتكار الرقمي"**. مهمتك هي اجتياز محطات المشغل التدريبي وتفعيل قوة **الألعاب التعليمية الذكية** لاستعادة روائع التدريس الفعّال!</span>
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-sm">
+                <div class="bg-purple-900/30 p-3 rounded-xl border border-purple-500/30">
+                    <i class="fa-solid fa-brain text-purple-400 text-xl mb-1"></i>
+                    <div class="font-bold text-purple-200">تحديات متدرجة</div>
+                    <div class="text-xs text-slate-400">أسئلة تمهل وتختبر خبرتك</div>
+                </div>
+                <div class="bg-pink-900/30 p-3 rounded-xl border border-pink-500/30">
+                    <i class="fa-solid fa-trophy text-pink-400 text-xl mb-1"></i>
+                    <div class="font-bold text-pink-200">نظام أوسمة وتغذية</div>
+                    <div class="text-xs text-slate-400">إجابات وتفسيرات فورية</div>
+                </div>
+                <div class="bg-indigo-900/30 p-3 rounded-xl border border-indigo-500/30">
+                    <i class="fa-solid fa-graduation-cap text-indigo-400 text-xl mb-1"></i>
+                    <div class="font-bold text-indigo-200">شهادة إنجاز</div>
+                    <div class="text-xs text-slate-400">تقرير أداء المعلم الخبير</div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="glow-button w-full md:w-2/3 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white font-black text-xl rounded-2xl cursor-pointer">
+                انطلق في الرحلة التدريبية 🚀
+            </button>
+        </div>
+
+        <!-- 2. Question / Challenge Screen -->
+        <div id="screen-game" class="hidden glass-card rounded-3xl p-6 md:p-8 relative transition-all duration-300">
+            <!-- Progress Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center text-sm mb-2 text-slate-300">
+                    <span id="level-title" class="font-bold text-purple-300">المرحلة 1: الأساسيات</span>
+                    <span id="progress-text" class="text-xs bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/30">سؤال 1 من 6</span>
+                </div>
+                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5 border border-white/10">
+                    <div id="progress-bar" class="bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 h-full rounded-full transition-all duration-500 w-0"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div id="question-container" class="space-y-6">
+                <!-- Difficulty Badge -->
+                <div class="flex items-center justify-between">
+                    <span id="difficulty-badge" class="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        مستوى: مبتدئ
+                    </span>
+                    <span id="question-points" class="text-xs font-semibold text-amber-400">
+                        +100 نقطة
+                    </span>
+                </div>
+
+                <!-- Question Text -->
+                <h3 id="question-text" class="text-xl md:text-2xl font-bold text-white leading-relaxed">
+                    جاري تحميل السؤال...
+                </h3>
+
+                <!-- Options Grid -->
+                <div id="options-grid" class="grid grid-cols-1 gap-3">
+                    <!-- Dynamic Option Buttons generated by JS -->
+                </div>
+            </div>
+
+            <!-- Feedback & Explanation Panel (Hidden initially) -->
+            <div id="feedback-panel" class="hidden mt-6 p-5 rounded-2xl border transition-all duration-300">
+                <div class="flex items-center gap-3 mb-2">
+                    <div id="feedback-icon" class="text-2xl"></div>
+                    <h4 id="feedback-title" class="text-lg font-bold"></h4>
+                </div>
+                <p id="feedback-text" class="text-sm leading-relaxed mb-4 text-slate-200"></p>
+                <div class="flex justify-end">
+                    <button id="next-btn" onclick="nextQuestion()" class="glow-button px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl text-sm flex items-center gap-2">
+                        <span>المحطة التالية</span>
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Final Report & Certificate Screen -->
+        <div id="screen-result" class="hidden glass-card rounded-3xl p-6 md:p-10 text-center relative overflow-hidden">
+            <div class="text-6xl mb-4 floating-element" id="final-emoji">🏆</div>
+            <h2 class="text-3xl font-black text-white mb-1">اكتملت الرحلة بنجاح!</h2>
+            <p class="text-purple-300 text-sm mb-6">تقرير ختام مشغل (الألعاب التعليمية الذكية)</p>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/10">
+                    <div class="text-slate-400 text-xs mb-1">النقاط الإجمالية</div>
+                    <div id="final-score" class="text-2xl font-black text-amber-400">0</div>
+                </div>
+                <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/10">
+                    <div class="text-slate-400 text-xs mb-1">نسبة الإتقان</div>
+                    <div id="final-accuracy" class="text-2xl font-black text-emerald-400">0%</div>
+                </div>
+                <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/10">
+                    <div class="text-slate-400 text-xs mb-1">أعلى تتابع إجابات</div>
+                    <div id="final-streak" class="text-2xl font-black text-cyan-400">0</div>
+                </div>
+                <div class="bg-slate-900/60 p-4 rounded-2xl border border-white/10">
+                    <div class="text-slate-400 text-xs mb-1">اللقب التربوي</div>
+                    <div id="final-rank" class="text-xs font-bold text-purple-300 mt-2">معلم متمارس</div>
+                </div>
+            </div>
+
+            <!-- Earned Badges -->
+            <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/10 mb-6 text-right">
+                <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-medal text-amber-400"></i>
+                    الأوسمة المكتسبة في الورشة:
+                </h4>
+                <div id="badges-container" class="flex flex-wrap gap-2">
+                    <!-- Dynamic badges -->
+                </div>
+            </div>
+
+            <!-- Pedagogical Summary -->
+            <div class="bg-purple-900/20 p-5 rounded-2xl border border-purple-500/30 text-right text-sm leading-relaxed mb-6">
+                <h4 class="font-bold text-purple-200 mb-2">💡 الخلاصة التربوية للمعلم الخبير:</h4>
+                <p class="text-slate-300 text-xs md:text-sm">
+                    إن دمج اللعب في التدريس ليس مجرد كسر للروتين، بل هو منهجية علمية تُحفز إفراز "الدوبامين" وتعزز التعلم العميق (Deep Learning)، وتجعل الطالب صانعاً للمعرفة بدلاً من متلقٍ سلبي. استمر في ابتكار ألعاب ذكية تلبي احتياجات القرن الـ 21!
+                </p>
+                <div class="mt-3 pt-3 border-t border-purple-500/20 text-center text-xs text-amber-300 font-bold">
+                    مع تحيات الأستاذ خميس الوشاحي - مدرسة سعيد بن المسيب للتعليم الأساسي
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-3">
+                <button onclick="resetGame()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-white/10 transition-all text-sm">
+                    إعادة الورشة التفاعلية 🔄
+                </button>
+                <button onclick="triggerCertificateEffect()" class="glow-button flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl transition-all text-sm">
+                    احتفل بالتخرج 🎊
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 w-full py-4 text-center text-xs text-slate-400 border-t border-white/5">
+        مشغل (الألعاب التعليمية الذكية) | إعداد وتقديم: الأستاذ خميس الوشاحي - مدرسة سعيد بن المسيب للتعليم الأساسي © 2026
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+
+        // Web Audio API Sound Synthesizer (No external audio files needed)
+        class SoundFX {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            playCorrect() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.3); // A5
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playWrong() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playClick() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // Game Database: Questions with progressive difficulty
+        const questions = [
+            {
+                levelTitle: "المرحلة الأولى: مفاهيم التلعيب (Gamification)",
+                difficulty: "مبتدئ",
+                difficultyClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+                points: 100,
+                question: "ما الفرق الأساسي بين 'الألعاب التعليمية' (Educational Games) و'التلعيب' (Gamification) في التدريس؟",
+                options: [
+                    "لا يوجد أي فرق بينهما وهما مصطلحان لشيء واحد.",
+                    "التلعيب هو استخدام آليات الألعاب (كالنقاط والأوسمة) في سياق تعليمي غير لعبي، بينما اللعبة التعليمية هي لعبة كاملة بمستويات وأهداف.",
+                    "اللعبة التعليمية تُستخدم فقط للترفيه، بينما التلعيب يُستخدم للدرجات الاختبارية.",
+                    "التلعيب يتطلب دائماً أجهزة إلكترونية حديثة بخلاف الألعاب التعليمية."
+                ],
+                correct: 1,
+                explanation: "أحسنت! التلعيب (Gamification) يعني استعارة عناصر اللعبة (مثل النقاط، التحديات، والشارات) وتطبيقها في الدرس العادي لزيادة الدافعية، بينما اللعبة التعليمية هي نشاط متكامل قائم على قواعد محددة."
+            },
+            {
+                levelTitle: "المرحلة الأولى: الأساسيات النفسية",
+                difficulty: "مبتدئ",
+                difficultyClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+                points: 100,
+                question: "كيف تؤثر الألعاب التعليمية على الموصلات العصبيّة في دماغ الطالب أثناء التعلم؟",
+                options: [
+                    "تزيد من هرمون الكورتيزول مما يسبب التوتر المفيد.",
+                    "تحفز إفراز الدوبامين، مما يعزز الشعور بالمتعة ويقوي ذاكرة الاستيعاب طويل المدى.",
+                    "تقلل من استهلاك الدماغ للأكسجين ليرتاح الطالب.",
+                    "توقف نشاط الفص الجبهي المسؤول عن التفكير النقدي."
+                ],
+                correct: 1,
+                explanation: "إجابة رائعة! اللعب والتحفيز المستمر يؤديان لإفراز 'الدوبامين'، وهو الناقل العصبي المسؤول عن الرغبة في الاستكشاف والتعلم، مما يجعل المعلومة ترتبط بمشاعر إيجابية تثبت في الذاكرة."
+            },
+            {
+                levelTitle: "المرحلة الثانية: الاستراتيجيات والتطبيق",
+                difficulty: "متوسط",
+                difficultyClass: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+                points: 200,
+                question: "يريد معلم تطبيق لعبة تعليمية ذكية للتقويم التكويني (Formative Assessment). أي الخيارات التالية تعبر عن الاستخدام الأكاديمي الأفضل؟",
+                options: [
+                    "إعطاء لعبة معقدة بدون توضيح القواعد وترك الطلاب يكتشفونها وحدهم طوال الحصة.",
+                    "استخدام اللعبة فقط في نهاية الفصل الدراسي لتوزيع الجوائز.",
+                    "ربط نواتج التعلم باللعبة، وتوفير تغذية راجعة فورية للطلاب لتقويم أخطائهم أثناء اللعب.",
+                    "جعل اللعبة فردية دائماً للحد من التفاعل والتحدث داخل الصف."
+                ],
+                correct: 2,
+                explanation: "صحيح جداً! الألعاب التعليمية تكون أكثر فاعلية عندما ترتبط مباشرة بأهداف الدرس وترافقها تغذية راجعة فورية، مما يسمح للطالب بتعديل فهمه ومعرفته في نفس اللحظة."
+            },
+            {
+                levelTitle: "المرحلة الثانية: تصميم الأنشطة",
+                difficulty: "متوسط",
+                difficultyClass: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+                points: 200,
+                question: "حسب نموذج 'قانون التدفق' (Flow Theory) لـ أبهي، كيف تضمن أن اللعبة التعليمية لا تسبب الملل ولا الإحباط للطلاب؟",
+                options: [
+                    "جعل اللعبة صعبة جداً لتحدي الطلاب الذكياء فقط.",
+                    "توازن دقيق بين مستوى التحدي في اللعبة ومهارات الطالب الحالية.",
+                    "جعل جميع الأسئلة سهلة للغاية لضمان نجاح الجميع بسرعة.",
+                    "إلغاء عنصر الوقت والمنافسة تماماً."
+                ],
+                correct: 1,
+                explanation: "ممتاز! نظرية التدفق تؤكد أنه إذا كان التحدي أعلى من المهارة يصاب الطالب بـ (القلق)، وإذا كان التحدي أقل تصاب بـ (الملل). التوازن الذكي هو سر نجاح الألعاب التعليمية."
+            },
+            {
+                levelTitle: "المرحلة الثالثة: الذكاء الاصطناعي والتخصيص",
+                difficulty: "متقدم (خبير)",
+                difficultyClass: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+                points: 300,
+                question: "كيف يساهم دمج الذكاء الاصطناعي (AI) في الألعاب التعليمية الحديثة؟",
+                options: [
+                    "استبدال المعلم بالكامل وتقليل التفاعل البشري.",
+                    "توفير مسارات تعلم مخصصة (Adaptive Learning) تتكيف صعوبتها تلقائياً بناءً على مستوى كل طالب.",
+                    "تحويل كل الدرجات إلى ألعاب فيديو دون الحاجة لتقييم معيار المعلم.",
+                    "تسريع سرعة الشاشة فقط دون تغيير المحتوى."
+                ],
+                correct: 1,
+                explanation: "مذهل! الألعاب الذكية المدعومة بالذكاء الاصطناعي تكيف الأسئلة والأنشطة بناءً على استجابات الطالب الفردية، مما يضمن تعليماً متمايزاً (Differentiated Instruction) يحقق الفروق الفردية."
+            },
+            {
+                levelTitle: "المرحلة الثالثة: الممارسة والتفكير النقدي",
+                difficulty: "متقدم (خبير)",
+                difficultyClass: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+                points: 300,
+                question: "معلم واجه مشكلة أن الطلاب يهتمون بالنظام التنافسي والنقاط في اللعبة دون التركيز على المعنى العلمي. ما هو الإجراء التربوي الذكي؟",
+                options: [
+                    "إلغاء اللعبة فوراً والعودة للتلقين التقليدي.",
+                    "زيادة النقاط بشكل خيالي لإرضاء الطلاب.",
+                    "إعادة هيكلة اللعبة لترتبط النقاط بالتفكير العميق والتفسير وخطوات الحل وليس فقط بالسرعة.",
+                    "معاقبة الطالب الذي يخسر بمنعه من المشاركة."
+                ],
+                correct: 2,
+                explanation: "قيادي ومبدع! المعلم الخبير يحول تركيز الطلاب من 'الدافع الخارجي' (النقاط المجردة) إلى 'الدافع الداخلي' من خلال ربط التعزيز بمهارات التفكير العليا والتحليل."
+            }
+        ];
+
+        // Game State Variables
+        let currentQIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let correctAnswersCount = 0;
+        let badges = [];
+        let canAnswer = true;
+
+        // HTML Elements References
+        const screenIntro = document.getElementById('screen-intro');
+        const screenGame = document.getElementById('screen-game');
+        const screenResult = document.getElementById('screen-result');
+        const hud = document.getElementById('hud');
+
+        const scoreDisplay = document.getElementById('score-display');
+        const streakDisplay = document.getElementById('streak-display');
+        const badgeCountDisplay = document.getElementById('badge-count');
+
+        const levelTitleEl = document.getElementById('level-title');
+        const progressTextEl = document.getElementById('progress-text');
+        const progressBarEl = document.getElementById('progress-bar');
+        const difficultyBadgeEl = document.getElementById('difficulty-badge');
+        const questionPointsEl = document.getElementById('question-points');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsGridEl = document.getElementById('options-grid');
+
+        const feedbackPanel = document.getElementById('feedback-panel');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackText = document.getElementById('feedback-text');
+
+
+        function startGame() {
+            sfx.playClick();
+            screenIntro.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            hud.classList.remove('hidden');
+            
+            // Reset Stats
+            currentQIndex = 0;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            correctAnswersCount = 0;
+            badges = [];
+
+            updateHUD();
+            loadQuestion();
+        }
+
+        function updateHUD() {
+            scoreDisplay.textContent = score;
+            streakDisplay.textContent = streak;
+            badgeCountDisplay.textContent = badges.length;
+        }
+
+        function loadQuestion() {
+            canAnswer = true;
+            const q = questions[currentQIndex];
+
+            // Hide Feedback Panel
+            feedbackPanel.classList.add('hidden');
+
+            // Update Header & Progress
+            levelTitleEl.textContent = q.levelTitle;
+            progressTextEl.textContent = `سؤال ${currentQIndex + 1} من ${questions.length}`;
+            const progressPercent = ((currentQIndex) / questions.length) * 100;
+            progressBarEl.style.width = `${progressPercent}%`;
+
+            // Difficulty & Points
+            difficultyBadgeEl.textContent = `المستوى: ${q.difficulty}`;
+            difficultyBadgeEl.className = `px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${q.difficultyClass}`;
+            questionPointsEl.textContent = `+${q.points} نقطة`;
+
+            // Question Text
+            questionTextEl.textContent = q.question;
+
+            // Generate Options
+            optionsGridEl.innerHTML = '';
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-right p-4 rounded-2xl glass-card border border-white/10 hover:border-purple-400/50 hover:bg-white/10 transition-all text-slate-100 font-medium text-sm md:text-base flex items-center justify-between cursor-pointer group`;
+                btn.onclick = () => handleAnswer(index, btn);
+                
+                btn.innerHTML = `
+                    <span class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs border border-purple-500/30 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                            ${String.fromCharCode(65 + index)}
+                        </span>
+                        <span>${opt}</span>
+                    </span>
+                    <i class="fa-regular fa-circle text-slate-500 group-hover:text-purple-300"></i>
+                `;
+                optionsGridEl.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedIndex, selectedBtn) {
+            if (!canAnswer) return;
+            canAnswer = false;
+
+            const q = questions[currentQIndex];
+            const isCorrect = selectedIndex === q.correct;
+            const optionBtns = optionsGridEl.querySelectorAll('button');
+
+            // Disable all buttons
+            optionBtns.forEach(btn => btn.classList.add('pointer-events-none'));
+
+            if (isCorrect) {
+                sfx.playCorrect();
+                selectedBtn.classList.remove('glass-card');
+                selectedBtn.classList.add('bg-emerald-600/40', 'border-emerald-400', 'text-white');
+                selectedBtn.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-400 text-xl';
+
+                // Confetti mini burst for correct answer
+                confetti({
+                    particleCount: 40,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+
+                // Update Stats
+                score += q.points + (streak * 20); // Streak Bonus
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+                correctAnswersCount++;
+
+                // Check Badges
+                checkBadges();
+
+                // Show Feedback
+                showFeedback(true, "إجابة متألقة! أحسنت صنعاً", q.explanation);
+
+            } else {
+                sfx.playWrong();
+                selectedBtn.classList.remove('glass-card');
+                selectedBtn.classList.add('bg-rose-600/40', 'border-rose-400', 'text-white', 'shake-error');
+                selectedBtn.querySelector('i').className = 'fa-solid fa-circle-xmark text-rose-400 text-xl';
+
+                // Highlight Correct One
+                const correctBtn = optionBtns[q.correct];
+                correctBtn.classList.remove('glass-card');
+                correctBtn.classList.add('bg-emerald-600/30', 'border-emerald-400/60');
+                correctBtn.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-400 text-xl';
+
+                streak = 0; // Reset streak
+
+                showFeedback(false, "محاولة عادية، ولكن التعلم يستمر!", q.explanation);
+            }
+
+            updateHUD();
+        }
+
+
+        function showFeedback(isCorrect, title, explanation) {
+            feedbackPanel.classList.remove('hidden', 'bg-emerald-950/40', 'border-emerald-500/30', 'bg-rose-950/40', 'border-rose-500/30');
+            
+            if (isCorrect) {
+                feedbackPanel.classList.add('bg-emerald-950/40', 'border-emerald-500/30');
+                feedbackIcon.innerHTML = '🌟';
+                feedbackTitle.className = 'text-lg font-bold text-emerald-300';
+            } else {
+                feedbackPanel.classList.add('bg-rose-950/40', 'border-rose-500/30');
+                feedbackIcon.innerHTML = '💡';
+                feedbackTitle.className = 'text-lg font-bold text-rose-300';
+            }
+
+            feedbackTitle.textContent = title;
+            feedbackText.textContent = explanation;
+        }
+
+        function checkBadges() {
+            if (streak === 3 && !badges.includes('متتابع ذكي')) {
+                badges.push('متتابع ذكي ⚡');
+            }
+            if (currentQIndex === 1 && correctAnswersCount === 2 && !badges.includes('أساس متين')) {
+                badges.push('أساس متين 🧱');
+            }
+            if (score >= 800 && !badges.includes('خبير التلعيب')) {
+                badges.push('خبير التلعيب 🏅');
+            }
+        }
+
+        function nextQuestion() {
+            sfx.playClick();
+            currentQIndex++;
+
+            if (currentQIndex < questions.length) {
+                loadQuestion();
+            } else {
+                finishGame();
+            }
+        }
+
+        function finishGame() {
+            screenGame.classList.add('hidden');
+            screenResult.classList.remove('hidden');
+
+            // Fill Bar fully
+            progressBarEl.style.width = '100%';
+
+            // Final Stats Calculation
+            const accuracy = Math.round((correctAnswersCount / questions.length) * 100);
+            
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+            document.getElementById('final-streak').textContent = maxStreak;
+
+            // Determine Rank Title
+            let rank = "معلم مبتكر";
+            let emoji = "🥉";
+            if (accuracy >= 85) {
+                rank = "معلم خبير ومصمم ألعاب محترف 🚀";
+                emoji = "👑";
+            } else if (accuracy >= 60) {
+                rank = "معلم متقدم في التعلم النشط 🎯";
+                emoji = "🥈";
+            }
+            document.getElementById('final-rank').textContent = rank;
+            document.getElementById('final-emoji').textContent = emoji;
+
+            // Render Badges
+            const badgeContainer = document.getElementById('badges-container');
+            badgeContainer.innerHTML = '';
+            
+            if (badges.length === 0) {
+                badges.push('مشارك متميز 🌟');
+            }
+
+            badges.forEach(b => {
+                const badgeEl = document.createElement('span');
+                badgeEl.className = 'px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full text-xs font-bold';
+                badgeEl.textContent = b;
+                badgeContainer.appendChild(badgeEl);
+            });
+
+            // Big Celebration Confetti
+            triggerCertificateEffect();
+        }
+
+        function triggerCertificateEffect() {
+            sfx.playCorrect();
+            confetti({
+                particleCount: 120,
+                spread: 100,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function resetGame() {
+            sfx.playClick();
+            screenResult.classList.add('hidden');
+            screenIntro.classList.remove('hidden');
+            hud.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
